@@ -1,0 +1,146 @@
+\section*{Wallace Multiplier}
+
+% Data-------------------------------------------------
+\subsection*{Data flow model}
+\begin{minted}{verilog}
+module unsigned_mult(output [7:0] m , input [3:0] a,b);
+	wire [3:0]p[0:3];
+	genvar i,j;
+	generate
+	for(i=0;i<4;i=i+1)
+	begin
+		for(j=0;j<4;j=j+1)
+		begin
+			assign p[i][j]=a[j]*b[i];
+		end
+	end
+	endgenerate
+	wire s0,s1,s2,s3,s4;
+	wire c0,c1,c2,c3,c4;	
+	
+	wire k1,l1,k2,l2;
+	
+	assign m[0]=p[0][0];
+	
+	half_adder h0(k1,l1,p[3][0],p[2][1]);
+	
+	half_adder h1(k2,l2,p[1][3],p[2][2]);
+	
+	half_adder h2(s0,c0,p[0][1],p[1][0]);
+	
+	FA_S f1(s1,c1,p[2][0],p[1][1],p[0][2]);
+	
+	FA_S f2(s2,c2,p[0][3],p[1][2],k1);
+	
+	FA_S f3(s3,c3,p[3][1],k2,l1);
+	
+	FA_S f4(s4,c4,p[2][3],p[3][2],l2);
+	
+	wire u1,u2,u3,u4;
+	
+	assign m[1]=s0;
+	
+	half_adder h3(m[2],u1,s1,c0);
+	
+	FA_S f5(m[3],u2,u1,s2,c1);
+	
+	FA_S f6(m[4],u3,u2,s3,c2);
+	
+	FA_S f7(m[5],u4,u3,s4,c3);
+	
+	FA_S f8(m[6],m[7],u4,p[3][3],c4);
+endmodule
+\end{minted}
+
+% Schematics------------------------------------------------
+\subsubsection*{Schematics : }
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=150 mm]{
+		wallace.png
+	}
+    \caption{Schematics of the Data flow modelling}
+\end{figure}
+
+% Constraints-------------------------------------------------
+\subsection*{Constraints on ports of FPGA }
+\begin{minted}{csharp}
+set_property IOSTANDARD LVCMOS33 [get_ports {a[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {a[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {a[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {a[0]}]
+set_property PACKAGE_PIN L5 [get_ports {a[0]}]
+set_property PACKAGE_PIN L4 [get_ports {a[1]}]
+set_property PACKAGE_PIN M4 [get_ports {a[2]}]
+set_property PACKAGE_PIN M2 [get_ports {a[3]}]
+set_property PACKAGE_PIN M1 [get_ports {b[0]}]
+set_property PACKAGE_PIN N3 [get_ports {b[1]}]
+set_property PACKAGE_PIN N2 [get_ports {b[2]}]
+set_property PACKAGE_PIN N1 [get_ports {b[3]}]
+set_property PACKAGE_PIN J3 [get_ports {m[0]}]
+set_property PACKAGE_PIN H3 [get_ports {m[1]}]
+set_property PACKAGE_PIN J1 [get_ports {m[2]}]
+set_property PACKAGE_PIN K1 [get_ports {m[3]}]
+set_property PACKAGE_PIN L3 [get_ports {m[4]}]
+set_property PACKAGE_PIN L2 [get_ports {m[5]}]
+set_property PACKAGE_PIN K3 [get_ports {m[6]}]
+set_property PACKAGE_PIN K2 [get_ports {m[7]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {b[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {b[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {b[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {b[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[7]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[6]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[5]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[4]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {m[0]}]}
+
+\end{minted}
+
+% Report-------------------------------------------------
+\subsection*{Reports :}
+\subsubsection*{Resources utilized : }
+\begin{center}
+\begin{tabular}{|c|c|c|}\hline
+\textit{Ref Name} & \textit{Used} & \textit{Functional category}\\
+\hline
+\textit{OBUF} & \textit{8} & \textbf{IO}\\
+\hline
+\textit{IBUF} & \textit{8} & \textbf{IO}\\
+\hline
+\textit{LUT2} & \textit{2} & \textbf{LUT}\\
+\hline
+\textit{LUT3} & \textit{2} & \textbf{LUT}\\
+\hline
+\textit{LUT4} & \textit{3} & \textbf{LUT}\\
+\hline
+\textit{LUT5} & \textit{7} & \textbf{LUT}\\
+\hline
+\textit{LUT6} & \textit{6} & \textbf{LUT}\\
+\hline
+\end{tabular}
+\end{center}
+\subsubsection*{Time delays}
+\begin{center}
+\begin{tabular}{|c|c|c|}\hline
+\textit{Type of Path} & \textit{Path taken} & \textbf{Time delay (ns)}\\
+\hline
+\textit{Max Delay path} 
+					  & \textbf{b[6]} \(\rightarrow\) \textbf{m[6]} & \textbf{11.016}  \\\cline{2-3}
+					  & \textbf{b[3]} \(\rightarrow\) \textbf{m[3]}  & \textbf{10.913} \\\cline{2-3}
+					  & \textbf{b[3]} \(\rightarrow\) \textbf{m[7]}  & \textbf{10.877} \\\cline{2-3}
+    \hline
+\textit{Min Delay path}
+					  & \textbf{a[1]} \(\rightarrow\) \textbf{m[2]} & \textbf{2.275}  \\\cline{2-3}
+					  & \textbf{b[1]} \(\rightarrow\) \textbf{m[7]}  & \textbf{2.297} \\\cline{2-3}
+					  & \textbf{b[1]} \(\rightarrow\) \textbf{m[6]}  & \textbf{2.332} \\\cline{2-3}
+    \hline
+\end{tabular}
+\end{center}
+\subsubsection*{Power consumed}
+\begin{itemize}
+    \item The power consumed by FPGA is \textbf{0.325 W}
+\end{itemize}

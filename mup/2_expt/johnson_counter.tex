@@ -1,0 +1,144 @@
+\section*{Johnson Counter}
+
+% Data-------------------------------------------------
+\subsection*{Data flow model}
+\begin{minted}{verilog}
+module decoder(input[2:0] cntr,output [7:0] led);
+	reg [6:0] val;
+	assign led={1'b1,~(val)};
+	
+	always@(cntr)
+	begin
+		case(cntr)
+		3'd0 : val=7'b0111111;
+		3'd1 : val=7'b0000110;
+		3'd2 : val=7'b1011011;
+		3'd3 : val=7'b1001111;
+		3'd4 : val=7'b1100110;
+		3'd5 : val=7'b1101101;
+		3'd6 : val=7'b1111101;
+		3'd7 : val=7'b0000111;
+		endcase
+	end
+endmodule
+
+module Johnson_count(input clk_in,reset,input [3:0] digit,output [7:0] led);
+	wire [2:0] cntr;
+	wire q0,q1,q2;
+	wire q0_bar,q1_bar,q2_bar;
+	wire clk_out;
+	
+	assign digit=4'b0001;
+	
+	clk_gen c1(clk_in,reset,clk_out);
+	
+	D_FF d1(q0_bar,clk_out,reset,q2,q2_bar);
+	D_FF d2(q2,clk_out,reset,q1,q1_bar);
+	D_FF d3(q1,clk_out,reset,q0,q0_bar);
+	
+	assign cntr={q2,q1,q0};
+	
+	decoder de1(cntr,led);
+
+endmodule
+\end{minted}
+\subsubsection*{Schematics : }
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=150 mm]{
+		johnson.png
+	}
+    \caption{Schematics of the Data flow modelling}
+\end{figure}
+
+% Constraints-------------------------------------------------
+\subsection*{Constraints on ports of FPGA }
+\begin{minted}{csharp}
+set_property IOSTANDARD LVCMOS33 [get_ports {digit[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {digit[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {digit[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {digit[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[7]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[6]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[5]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[4]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports clk_in]
+set_property IOSTANDARD LVCMOS33 [get_ports reset]
+set_property PACKAGE_PIN F2 [get_ports {digit[0]}]
+set_property PACKAGE_PIN E1 [get_ports {digit[1]}]
+set_property PACKAGE_PIN G5 [get_ports {digit[2]}]
+set_property PACKAGE_PIN G4 [get_ports {digit[3]}]
+set_property PACKAGE_PIN H1 [get_ports {led[7]}]
+set_property PACKAGE_PIN H2 [get_ports {led[6]}]
+set_property PACKAGE_PIN J4 [get_ports {led[5]}]
+set_property PACKAGE_PIN J5 [get_ports {led[4]}]
+set_property PACKAGE_PIN H4 [get_ports {led[3]}]
+set_property PACKAGE_PIN H5 [get_ports {led[2]}]
+set_property PACKAGE_PIN G1 [get_ports {led[1]}]
+set_property PACKAGE_PIN G2 [get_ports {led[0]}]
+set_property PACKAGE_PIN N11 [get_ports clk_in]
+set_property PACKAGE_PIN L5 [get_ports reset]
+\end{minted}
+
+% Simulation-------------------------------------------------
+\subsection*{Simulation :}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=180 mm]{
+		gtkwav-johnson.png
+	}
+\end{figure}
+
+% Report-------------------------------------------------
+\subsection*{Reports :}
+\subsubsection*{Resources utilized : }
+\begin{itemize}
+    \item 47 \textbf{SLICE LUT} were used, where LUT is used as a logic and not memory.
+	\item 37 Slice Registers were used as Flip Flop.
+\end{itemize}
+\subsubsection*{Clock :}
+\begin{itemize}
+	\item only 1 Global Clock was utilized. 
+\end{itemize}
+\begin{center}
+\begin{tabular}{|c|c|c|c|}\hline
+\textit{Clock Region Name} & \textit{Global Clock (Used)} & \textbf{FF (Used)} & \textbf{LUTM (Used)}\\
+\hline
+\textit{X0Y0} & \textit{0} & \textit{0} & \textit{0}\\
+\textit{X1Y0} & \textit{0} & \textit{0} & \textit{0}\\
+\textit{X0Y1} & \textit{0} & \textit{0} & \textit{0}\\
+\textit{X1Y1} & \textit{1} & \textit{37} & \textit{6}\\
+\textit{X0Y2} & \textit{0} & \textit{0} & \textit{0}\\
+\textit{X1Y2} & \textit{0} & \textit{0} & \textit{0}\\
+\hline
+\end{tabular}
+\end{center}
+\subsubsection*{Time delays}
+\begin{center}
+\begin{tabular}{|c|c|c|}\hline
+\textit{Type of Path} & \textit{Path taken} & \textbf{Time delay (ns)}\\
+\hline
+\textit{Max Delay path} 
+    & \textbf{} \(\rightarrow\) \textbf{} & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    \hline
+\textit{Min Delay path}
+    & \textbf{} \(\rightarrow\) \textbf{} & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    & \textbf{} \(\rightarrow\) \textbf{}  & \\\cline{2-3}
+    \hline
+\end{tabular}
+\end{center}
+\subsubsection*{Power consumed}
+\begin{itemize}
+    \item The power consumed by FPGA is \textbf{0.325}
+\end{itemize}

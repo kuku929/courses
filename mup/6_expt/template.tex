@@ -1,0 +1,42 @@
+\begin{center}
+    \fbox{\Large{\textbf{\textcolor{red}{Interrupts in C}}}}
+\end{center}
+\section*{Introduction :}
+\begin{itemize}
+    \item This task involves writing a C program to transfer control 
+			from a white LED(turned on) to a blinking LED on a button press
+	\item pressing a button will send an interrupt signal to the program
+			which will then run the subroutine we have written to turn off 
+			the white LED and blink the other LED at a constant frequency.
+\end{itemize}
+
+\section*{Code}
+
+\begin{lstlisting}[style=CStyle]
+
+#define F_CPU 8000000UL
+#include <avr/io.h>
+#include<util/delay.h>
+#include <avr/interrupt.h>
+int main(void)
+{
+	DDRB=0x03; // LED connected as output
+	DDRD=0x00; // input
+	GICR=0x40; // setting INT0 interrupt
+	SREG=0x80; // global interrupt enable
+	while(1)
+	{
+		PORTB=0x01; // turning on LED
+	}
+}
+ISR(INT0_vect)
+{
+	cli(); // disabling interrupts 
+	PORTB=0x02; // switching LED
+	_delay_ms(100); //blinking logic
+	PORTB=0x00;
+	_delay_ms(100);
+	sei(); //enabling interrupts
+}
+
+\end{lstlisting}

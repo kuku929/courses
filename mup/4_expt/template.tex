@@ -1,0 +1,65 @@
+\begin{center}
+    \fbox{\Large{\textbf{\textcolor{red}{Finding the sum of numbers}}}}
+\end{center}
+\section*{Introduction :}
+\begin{itemize}
+    \item This task involves iterating through the registers and finding the sum
+    \item It will always take $n$ computations where n is the total number of values.
+\end{itemize}
+
+\section*{Code for Sum}
+
+{\renewcommand\fcolorbox[4][]{\textcolor{cyan}{\strut#4}}
+        \begin{minted}{gas}
+.CSEG
+
+
+LDI ZL, LOW(NUM<<1) ; Load the Z pointer with the array NUM
+LDI ZH, HIGH(NUM<<1) ; Load the Z pointer with the array NUM
+
+; R16 will always store the sum of the array
+LPM R16, Z+ ; Load the first value of array 
+
+LDI R18, 0x09 ; Counter
+
+LOOP : 
+        LPM R17,Z+ ; Load the next value to R17
+        ADD R16,R17 ; Adding 
+	DEC R18 ; dereasing the counter
+BRNE LOOP
+
+NOP
+
+NUM: .db 0x01,0x09,0x08,0x00,0x16,0x12,0x13,0x14,0x15,0x19
+        \end{minted}
+}
+
+\section*{Usage of registers in flash memory in this code : }
+\begin{center}
+    \begin{tabular}{|c|c|}
+        \hline
+        & \\
+            Registers  &  Usage 
+        \\ & \\
+        \hline
+        & \\
+            \textbf{R18} & Counter variable
+        \\ & \\
+        \hline
+        & \\
+            \textbf{R16} and \textbf{R17} & To store sum and temporary variable to store the loaded value
+        \\ & \\
+        \hline
+        & \\
+            \textbf{Z} pointer &  Store the array address to flash memory where the values are given.
+        \\ & \\
+        \hline
+    \end{tabular}
+\end{center}
+
+\section*{Process}
+\begin{itemize}
+    \item Getting the values from the array and storing in a temporary variable.  
+    \item Adding the current sum to the loaded value
+    \item updating the sum
+\end{itemize}

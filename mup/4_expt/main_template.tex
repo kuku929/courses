@@ -1,0 +1,65 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{draftwatermark}
+\usepackage{hyperref}
+\usepackage[a4paper, top=0.5in, bottom=0.7in, left=0.6in, right=0.6in, headheight=0.1in, footskip=0.5in]{geometry}
+\usepackage{minted}
+
+\title{MICROPROCESSOR LAB EXPERIMENT 4}
+\author{GROUP - 18 \\ Deenabandhan N ee23b021 \\ Sai Harshith Gajendra ee23b069 \\ Krutarth Patel ee23b137}
+\date{04 September 2024}
+
+\SetWatermarkText{Microprocessor Lab Experiment 4}
+\SetWatermarkScale{2} 
+\SetWatermarkColor[gray]{0.99}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction :}
+\begin{itemize}
+    \item In this experiment , we are going to learn how to program the micro controller \textbf{ATmega8}.
+    \item This experiment involves ,
+    \begin{itemize}
+        \item Introduction to assembly language.
+        \item Write a program in assembly language to display the maximum and minimum of 10 numbers stored in \textbf{FLASH} memory.
+        \item Write a program in assembly language to add 10 numbers stored in flash memory and store it in the register.
+        \item Sort 5 numbers stored in flash memory in arbitrary order and write the final results to data memory
+    \end{itemize}
+    \item In this report , we have included the code of the tasks and our experience with the assembly language. 
+\end{itemize}
+
+\section*{ATmega-8 and Microchip studio :}
+\begin{itemize}
+    \item Atmega-8 is an 8-bit RISC single-chip microcontroller developed by Atmel.
+    \item The number 8 in its name represents that it can operate 8 bits at a time while processing the information i.e in a way it represents the capacity of the microcontroller.
+    \item Some features of AVR microcontroller are
+    \begin{itemize}
+        \item I/O ports.
+        \item Internal instructions flash memory
+        \item SRAM upto 16KB
+        \item Timers
+    \end{itemize}
+    \item Flash memory is used to store the programs whatever we have written in the microchip studio.
+    \item Each instruction will occupy the size of 2 bytes/16 bits in flash memory except for the instructions like \textbf{STS} , \textbf{JMP} which will occupy 4 bytes in the memory.
+    \item For example the following code ,
+    {\renewcommand\fcolorbox[4][]{\textcolor{cyan}{\strut#4}}
+        \begin{minted}{gas}
+            LDI R16,0x01
+        \end{minted}
+    }
+    will occupy 2 bytes in the memory.
+    \item Flash memory also has 32 registers (from R0 to R31) with three pointers ,
+    \begin{itemize}
+        \item Z pointer : R30 and R31
+        \item Y pointer : R28 and R27
+        \item X pointer : R25 and R26
+    \end{itemize}
+    \item These registers are used to hold memory in addition to having SRAM whose address starts from \textcolor{blue}{0x60}.
+    \item We will see the instructions to implement the logic in the following sections.
+\end{itemize}
+
+\include{template}
+
+\end{document}

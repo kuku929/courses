@@ -1,0 +1,39 @@
+
+\begin{center}
+    \fbox{\Large{\textbf{\textcolor{red}{Bonus Question}}}}
+\end{center}
+\section*{Introduction :}
+\begin{itemize}
+    \item This task involves taking two 4-bit numbers from PORT-D and displaying their
+			sum using LEDs connected to PORT-C.
+\end{itemize}
+
+\section*{Code}
+
+\begin{lstlisting}[style=CStyle]
+#include <avr/io.h>
+#include <stdint.h>
+#include <util/delay.h>
+int main(void)
+{
+	DDRC = 0x1F; //output port
+	DDRD = 0x00; //input port
+	
+	while(1)
+	{
+		unsigned char data = PIND; //receiving data 
+
+		// we get the 4-bit numbers as one 8-bit number
+		// eg: number1 ->0101 1110<- number2
+		PORTC = (data>>4)+ (data&15); 
+		_delay_ms(10);
+	}
+}
+
+\end{lstlisting}
+\section*{Process}
+\begin{itemize}
+    \item Getting two 4-bit numbers from PORT-C.
+    \item Adding the two numbers.
+    \item Displaying the result using LEDs.
+\end{itemize}

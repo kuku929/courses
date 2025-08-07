@@ -1,0 +1,108 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{draftwatermark}
+\usepackage{hyperref}
+\usepackage[a4paper, top=0.5in, bottom=0.7in, left=0.6in, right=0.6in, headheight=0.1in, footskip=0.5in]{geometry}
+\usepackage{minted}
+\usepackage{listings}
+
+\title{MICROPROCESSOR LAB EXPERIMENT 5}
+\author{GROUP - 18 \\ Deenabandhan N ee23b021 \\ Sai Harshith Gajendra ee23b069 \\ Krutarth Patel ee23b137}
+\date{27 September 2024}
+
+\SetWatermarkText{Microprocessor Lab Experiment 5}
+\SetWatermarkScale{2} 
+\SetWatermarkColor[gray]{0.99}
+
+\definecolor{mGreen}{rgb}{0,0.6,0}
+\definecolor{mGray}{rgb}{0.5,0.5,0.5}
+\definecolor{mPurple}{rgb}{0.58,0,0.82}
+\definecolor{backgroundColour}{rgb}{0.95,0.95,0.92}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}}
+
+\lstdefinestyle{CStyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\scriptsize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=c
+}
+\lstset{style=CStyle}
+
+\begin{document}
+\maketitle
+\section*{Introduction :}
+\begin{itemize}
+	\item In this experiment , we are going to learn about interrupts and subroutines in C and Assembly programs using the \textbf{ATmega8}.
+    \item This experiment involves ,
+    \begin{itemize}
+        \item Introduction to Interrupt handling.
+		\item Writing a program in C to transfer control from a white LED(turned on) to a blinking LED on a button press
+        \item Writing a program in Assembly to blink an LED upon receiving an interrupt in the form of a button press
+        \item Changing the code in the above task to transfer control from a white LED(turned on) to a blinking LED on a button press
+    \end{itemize}
+    \item In this report , we have included the code of the tasks and our experience with C and Assembly. 
+\end{itemize}
+
+\section*{ATmega-8 and Microchip studio :}
+\begin{itemize}
+    \item Atmega-8 is an 8-bit RISC single-chip microcontroller developed by Atmel.
+    \item The number 8 in its name represents that it can operate 8 bits at a time while processing the information i.e in a way it represents the capacity of the microcontroller.
+    \item Some features of AVR microcontroller are
+    \begin{itemize}
+        \item I/O ports.
+        \item Internal instructions flash memory
+        \item SRAM upto 16KB
+        \item Timers
+    \end{itemize}
+    \item The AtMega8 microcontroller has a total of 32 8-bit registers and 23 I/O pins.
+    \subsection*{Atmega8 microcontroller pin diagram :}
+    \begin{itemize}
+        \item The pin diagram of Atmega8 microcontroller is ,
+        \begin{figure}[H]
+            \centering
+            \includegraphics[width=0.5\linewidth]{pin_atm.png}
+        \end{figure}
+        \item It has 3 ports PortB,PortC and PortD.
+        \item Each port acts as a bidirectional buffer that could carry both input and output values with specific address.
+        \item The registers that are associated with these ports are 
+        \begin{itemize}
+            \item \textbf{DDRX} - Register to mention whether the particular pin is input/output.
+            Eg : DDRD=0x0F means , first 8 pins are output pins and the rest are input pins.
+            \item \textbf{PORTX} - Register to mention the output to be given through the pin.
+            Eg : PORTC=0xF0 means that the first 8 pins of Port C are set to logic low and the rest of them are set to logic high.
+            \item \textbf{PINX} - Register that is used to store the value thta is given as input in the pins.
+            Eg : a=PINB means that whatever input that is given at port B is given to the variable a.
+        \end{itemize}
+        \item In addition to these ports it also supports interrupt operations which is an important instruction in any microcontroller.
+    \end{itemize}
+    \subsection*{Libraries used in the C code}
+    \begin{itemize}
+        \begin{lstlisting}[style=CStyle]
+#include <avr/io.h>\end{lstlisting}
+        \item The above library is used to include standard avr commands like \textbf{DDRD , PORTC , PINB}
+
+            \begin{lstlisting}[style=CStyle]
+#include <util/delay.h>\end{lstlisting}
+        \item The above library is used to include time delays using the function , \begin{lstlisting}[style=CStyle]
+delay_ms(100) //includes 100ms delay \end{lstlisting}
+    \end{itemize}
+\end{itemize}
+\include{template}
+\end{document}

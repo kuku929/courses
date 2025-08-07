@@ -1,0 +1,54 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{draftwatermark}
+\usepackage{parskip}
+\usepackage[a4paper, top=0.5in, bottom=0.7in, left=0.6in, right=0.6in, headheight=0.1in, footskip=0.5in]{geometry}
+\usepackage{minted}
+
+\title{MICROPROCESSOR LAB EXPERIMENT 2}
+\author{Deenabandhan N ee23b021 \\ Sai Harshith Gajendra ee23b069 \\ Krutarth Patel ee23b137}
+\date{18 August 2024}
+
+\SetWatermarkText{Microprocessor Lab Experiment}
+\SetWatermarkScale{2} 
+\SetWatermarkColor[gray]{0.9}
+
+\begin{document}
+\maketitle
+\section*{Introduction }
+
+FPGA board : Edge Artix 7
+This experiment involves 
+\begin{itemize}
+    \item Simulating a half-adder using Xilinx Vivado and implementing on the FPGA board. 
+    \item Extending the half-adder design to a full-adder, simulating it and implementing on the FPGA board. 
+    \item Designing a 4-bit ripple-carry adder and implementing on the
+            FPGA board.
+\end{itemize}
+\section*{Xilinx Vivado}
+\begin{itemize}
+    \item We were introduced to Xilinx vivado , a software that is used to synthesize and analyse the hardware description designs.
+    \item The procedures that we followed are ,
+    \begin{itemize}
+        \item Create a project with source file as our Verilog code.
+        \item Add constraints to the ports that we have defined in the Verilog code.
+        \item Run the synthesis to check whether our Verilog code has any error in it.
+        \item We can open the Schematics to see the design that we have coded in Verilog.
+        \item After running synthesis , we can run simulation using our testbench and check for logical errors.
+        \item Once we confirm there is no logical/syntax error , we can run the implementation which basically implements our hardware description in the board which we have chosen while creating the project.
+        \item After the implementation is done , we can generate bitstream which is basically a file that contains the configuration information for an FPGA.
+        \item Once we successfully generate the bitstream , we can connect the target source and program it with the generated bitstream.
+    \end{itemize}
+    \item In this report , we have included 
+    \begin{itemize}
+        \item Verilog code for module instantiation.
+        \item We have included both data flow as well as gate level modelling here.
+        \item The Schematics generated from Xilinx Vivado.
+        \item The Constraints file generated for FPGA.
+        \item The testbench and simulation generated
+        \item The analysis of reports obtained from Xilinx Vivado.
+    \end{itemize}
+\end{itemize}
+\include{wallace_mult}
+\end{document}
+

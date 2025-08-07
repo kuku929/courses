@@ -1,0 +1,6 @@
+[submodule "comnet-assignments"]
+	path = comnet-assignments
+	url = git@github.com:kuku929/comnet-assignments.git
+[submodule "paradigms-of-programming/cs3100_m25"]
+	path = paradigms-of-programming/cs3100_m25
+	url = https://github.com/kayceesrk/cs3100_m25.git
