@@ -198,10 +198,42 @@ Swap2(int x, int y){
 
 \section*{Compiling a C program}
 \subsection*{Optimizing}
-You can optimize youc \texttt{*.c} code by using the \texttt{\textbackslash O1} flag if using MSVC
+You can optimize your \texttt{*.c} code by using the \texttt{\textbackslash O1} flag if using MSVC
 
 It removes dead code and can optimize to reduce intstructions. However one should
 be very careful and not trust the compiler to do their job perfectly all the time.
 
+\begin{minted}[linenos, frame=single]{c}
+int __stdcall Fn(int x, int y){
+	/*
+	* Prologue
+	* PUSH EBP	; store the previous base
+	* MOV EBP, ESP	; set the top as the new base
+	* SUB ESP, 0x40 ; leave some space out for local variables(?)
+	*/
+	// MOV [EBP-4], 0
+	int z = 0;
+	z = x+y;
+	/* MOV EAX, 8[EBP]
+	*  MOV EBX, 12[EBP]
+	*  ADD EAX, EBX
+	*/
+	MOV [EBP-4], EAX
+	return z;
+	/* Epilogue
+	*  ADD ESP, 0x40
+	*  POP EBP
+	*  RET 8	; doing __stdcall forces compiler to do the 
+	*		; stack cleanup
+	*/
+}
+int main(){
+	int z=0;
+	z = Fn(2,4);
+}
+\end{minted}
+\texttt{\_\_stdcall} forces the callee to do the stack cleanup. Normal behaviour is
+\texttt{RET 0} in the callee function and \texttt{ADD ESP, N} in the caller function. Directly doing \texttt{RET N} is faster(by one clock cycle) but you cannot do
+variable arguments.
 \end{document}
 
