@@ -197,11 +197,13 @@ Swap2(int x, int y){
 
 
 \section*{Compiling a C program}
-\subsection*{Optimizing}
-You can optimize your \texttt{*.c} code by using the \texttt{\textbackslash O1} flag if using MSVC
-
+\fbox{\begin{minipage}{\textwidth}
+\subsection*{Optimization}
+You can optimize your \texttt{*.c} code by using the \texttt{\textbackslash O1} flag if using MSVC.
 It removes dead code and can optimize to reduce intstructions. However one should
 be very careful and not trust the compiler to do their job perfectly all the time.
+\end{minipage}
+}
 
 \begin{minted}[linenos, frame=single]{c}
 int __stdcall Fn(int x, int y){
@@ -232,8 +234,34 @@ int main(){
 	z = Fn(2,4);
 }
 \end{minted}
+
+\fbox{\begin{minipage}{\textwidth}
+\subsection*{Optimization}
 \texttt{\_\_stdcall} forces the callee to do the stack cleanup. Normal behaviour is
 \texttt{RET 0} in the callee function and \texttt{ADD ESP, N} in the caller function. Directly doing \texttt{RET N} is faster(by one clock cycle) but you cannot do
 variable arguments.
+\end{minipage}}
+
+\subsection*{Pushing parameters}
+The parameters passed to a function are pushed from right to left. For a call like:
+\[f(a, b, c ... z)\]
+
+the stack will look like:
+\newline
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+	\hline a & b & c & ... & z\\
+	\hline ESP & & & & EBP \\
+	\hline
+\end{tabular}
+\end{center}
+
+
+\fbox{\begin{minipage}{\textwidth}
+\subsection*{Optimization}
+\texttt{\_\_fastcall} is a calling convention( specific to MSVC ) that asks the compiler to use registers to store parameters( wherever possible ). This will speed
+up memory access.
+\end{minipage}
+}
 \end{document}
 
