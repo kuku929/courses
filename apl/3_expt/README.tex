@@ -1,0 +1,207 @@
+
+\documentclass{report}
+\usepackage{graphicx} % Required for inserting images
+\graphicspath{ {./img/} }
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{placeins}
+\usepackage[a4paper, top=0.1in, bottom=0.1in, left=1in, right=1in]{geometry}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\scriptsize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\title{Estimating the Black Body curve}
+\author{Krutarth Patel ee23b137}
+\date{14th september 2024}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction}
+This report aims to estimate the various constants in the black 
+body curve using raw data.
+
+The equation for the curve is given by:
+\[I(\nu, T) = \frac{2 \pi h c^2}{\lambda^5} \cdot \frac{1}{e^{\frac{h c}{\lambda k_B T}} - 1}\]
+\begin{itemize}
+	\item $I(\lambda ,T)$ is the intensity of radiation at wavelength $\lambda$ and temperature T,
+	\item $h$ is Planck's constant,
+	\item $\lambda$ is the wavelength of radiation,
+	\item $c$ is the speed of light in a vacuum,
+	\item $k_B$ is the Boltzmann's constant,
+	\item $T$ is the absolute temperature of the black body.
+\end{itemize}
+
+We are interested in estimating the values of \[h, c, k_B, T\]
+
+\section*{Data}
+the following samples are provided to us: 
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=12cm]{d1.png}
+    \caption{Sample 1}
+\end{figure}
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=12cm]{d3.png}
+    \caption{Sample 3}
+\end{figure}
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=12cm]{d2.png}
+    \caption{Sample 2}
+\end{figure}
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=12cm]{d4.png}
+    \caption{Sample 4}
+\end{figure}
+
+\section*{No Initial guess}
+To begin with we will try to fit the sample points with no prior estimation given. We quickly run into a problem though, trying to fit without an initial guess leads to a float overflow error. This is expected since Scipy assumes an initial value of 1 for all parameters. Assuming 
+\[h, c, k_B, T = 1\] 
+and 
+\[\lambda = 10^{-7}\] 
+the approximate value of \[I(\lambda, T) = \frac{2 \pi}{10^{-35}} \cdot \frac{1}{e^{10^7} - 1}\]
+which for obvious reasons cannot be stored using the precision of a 32-bit floating point number. $e^{10^7}$ is causing the overflow, thus we can \textbf{normalize} the samples. Multiplying each input value with $10^6$ avoids the overflow error and allows the algorithm to begin iterating.
+
+\section*{Algorithm}
+Now is a good time to talk about the tool I am using to fit. my first instinct was to mess with the data using \texttt{gnuplot}, it is a command-line plotting tool which is very easy to use. gnuplot has a fitting tool as well, so I tried it first. 
+
+Passing the normalized data to the fitting tool in \texttt{gnuplot} using the following command: 
+
+\begin{lstlisting}[language=matlab]
+	fit f(x) 'd1_normalized.txt' via h,k,c,t
+\end{lstlisting}	
+
+But, this does not help much. We get the following fit:
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=8cm]{gnuplot_first.png}
+    \caption{first attempt}
+\end{figure}
+
+Now, to converge the fit properly, I used an approximation of the 
+black body curve: \[I(\nu, T) = \frac{2 \pi h c^2}{\lambda^5} \cdot ({e^{\frac{-h c}{\lambda k_B T}} - 1})\]
+
+This gives: 
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=8cm]{gnuplot_second.png}
+    \caption{using approximation}
+\end{figure}
+\FloatBarrier
+Alternating between this approximation and the real formula, I was able to get the following curve:
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=8cm]{gnuplot_fit2.png}
+    \caption{no initial guess(note the values in x axis range from 0-5)}
+\end{figure}
+
+\FloatBarrier
+\textbf{NOTE}: This can be accomplished using SciPy as well, The code I have submitted will approximate without a guess and with a guess and show the results. 
+\section*{With Initial guess}
+For this section I have used the SciPy libraries \texttt{curve\_fit} function.
+
+The code for the same looks like this: 
+\begin{lstlisting}[language=Python]
+
+import scipy
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def f(x, h, c, k, t):
+    return (2 * h * c * c / x**5) / 
+			(np.exp(1 * h * c / (x * k * t)) - 1)
+
+
+def main():
+    xdata = []
+    ydata = []
+    with open("data/d3.txt", "r") as fin:
+        for line in fin.readlines():
+            x, y = line.split(",")
+            xdata.append(float(x))
+            ydata.append(float(y))
+
+    #fitting
+    initial_guess = [6.62 * 1e-34, 3 * 1e3, 1.38 * 1e-23, 1]
+    params, cov = scipy.optimize.curve_fit(
+        f, xdata, ydata, initial_guess, nan_policy="omit"
+    )
+
+    #getting prediction	
+    ypred = []
+    for val in xdata:
+        ypred.append(
+					f(val, params[0], params[1], 
+				    params[2], params[3])
+							      )
+
+    #plotting
+    plt.title("Curve fitting")
+    plt.xlabel("wavelength (m)")
+    plt.ylabel("power density (Watts/m^3)")
+    plt.plot(xdata, ypred, label="fitted curve")
+    plt.plot(
+        xdata, ydata, markersize=2, marker=".", linestyle="None", label="data sample"
+    )
+    plt.legend()
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
+
+\end{lstlisting}
+Since there are three known constants $h, c, k_B$, we can give the initial guess of any combination of these, starting with:
+\[h=6.62\times10^{-34}, c=3\times10^3, k_B=1.38\times10^{-23}\]
+\begin{figure}[!h]
+	\centering
+	\includegraphics[]{scipy_fit.png}
+\end{figure}
+
+\FloatBarrier
+And the final constants are: \[ h=2.17146884*10^{-31}, c=1.61328417*10^7, k_B = -3.53152592*10^{-21},  t=-2.78747897*10^2 \]
+
+\section*{Using the program}
+You can reproduce these results with the python file I have attached with my submission. Please keep the following in mind while using the program:
+\begin{itemize}
+	\item pass the filename as a positional argument
+	\item As mentioned earlier, I normalize the input data by multiplying with 
+			a constant. To get a correct fit, One will have to play around with this normalization constant. For the purpose of this assignment please use the following values:
+		\begin{itemize}
+			\item for \texttt{d1.txt} use $10^6$
+			\item for \texttt{d3.txt} use $10^5$
+		\end{itemize}
+Thus, running the program would look something like this: 
+\begin{lstlisting}[language=bash]
+	$ python3 ee23b137.py d1.txt -normalize 1e6
+\end{lstlisting}
+\end{itemize}
+\end{document}
+

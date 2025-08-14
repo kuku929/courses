@@ -1,0 +1,254 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\scriptsize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\title{Keyboard Layout Optimizer Using Simulated Annealing}
+\author{Krutarth Patel}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+This report presents a Python program designed to optimize keyboard layouts using a simulated annealing algorithm. The program aims to minimize the total distance traveled by fingers when typing a given text.
+
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=10cm]{plot.png}
+    \caption{Opimization}
+\end{figure}
+
+NOTE: this will NOT work on the Jupyter server since a real-time graph is displayed
+as the layout is optimized. Please run it on a local machine, Windows or Linux ( haven't tested in MacOS ).
+
+\section{Usage}
+If your machine allows, you will see a real-time graph of the score
+as it is optimized. Once the optimization is over, quitting the real-time graph will 
+produce the optimized keyboard layout.
+To use the program, run it from the command line with two arguments:
+\begin{enumerate}
+    \item path to the keyboard layout XML file
+    \item path to the text file to optimize for
+    \item number of iterations to run
+
+\end{enumerate}
+
+Example:
+\begin{verbatim}
+python keyboard_optimizer.py layout.xml sample_text.txt
+\end{verbatim}
+\section{Methodology}
+The optimization process employs simulated annealing, a probabilistic technique for approximating the global optimum of a given function. In this case, the function to be minimized is the total distance traveled by fingers when typing a specific text.
+
+\subsection{Simulated Annealing}
+The simulated annealing algorithm works as follows:
+\begin{enumerate}
+    \item Start with an initial layout (current solution).
+    \item Generate a new candidate layout by making random changes to the current layout.
+    \item Calculate the difference in the evaluation metric (total distance traveled) between the candidate and current layouts.
+    \item Accept the candidate layout if it's better than the current one, or accept it with a probability that decreases over time if it's worse.
+    \item Repeat steps 2-4 for a predetermined number of iterations.
+\end{enumerate}
+
+\section{Key Components}
+
+\subsection{Optimizer}
+The \texttt{Optimizer} class implements the core optimization algorithm. Its main functions include:
+\begin{itemize}
+    \item Calculating distances traveled by fingers
+    \item Generating random layouts by swapping keys
+    \item Implementing the simulated annealing algorithm
+    \item Visualizing the optimization process in real-time
+\end{itemize}
+
+\subsection{Painter}
+The \texttt{Painter} class is responsible for creating a visual representation of the optimized keyboard layout using matplotlib. It draws:
+\begin{itemize}
+    \item Individual keys with their labels
+    \item Shift-mapped characters
+    \item Special highlighting for home row keys
+\end{itemize}
+
+\section{Implementation Details}
+
+\subsection{Distance Calculation}
+The finger travel distance is calculated by finding the minimum distance 
+of the key from the home row keys defined in the layout. You can define a row
+to be the home row by setting the \texttt{home} attribute.
+
+The distance traveled by fingers is calculated using the Euclidean distance formula:
+
+\begin{equation}
+    d = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}
+\end{equation}
+
+where $(x_1, y_1)$ is the position of the home key for a finger and $(x_2, y_2)$ is the position of the key to be pressed.
+
+\subsection{Temperature Schedule}
+The temperature in the simulated annealing process decreases over time according to the formula:
+
+NOTE: I have taken the sqrt in the denominator since I found that the temperature
+	was reducing too fast, leading to less "randomness"
+
+\begin{equation}
+    T(t) = \frac{T_0}{\sqrt{t + 1}}
+\end{equation}
+
+where $T_0$ is the initial temperature (set to half the number of iterations) and $t$ is the current iteration.
+
+\subsection{Acceptance Probability}
+The probability of accepting a worse solution is calculated using the Metropolis criterion:
+
+\begin{equation}
+    P(\text{accept}) = \exp(-\frac{\Delta E}{T})
+\end{equation}
+
+where $\Delta E$ is the difference in evaluation metric between the candidate and current layouts, and $T$ is the current temperature.
+
+
+\section{Conclusion}
+By minimizing the total distance traveled by fingers during typing, it has the potential to improve typing efficiency and reduce strain. Future work could include:
+\begin{itemize}
+    \item Incorporating additional ergonomic factors into the optimization metric
+    \item Implementing machine learning techniques to personalize layouts based on individual typing patterns
+    \item Extending the program to support multi-language optimization
+\end{itemize}
+
+\section{Documentation for custom xml format}
+I am using a custom xml format for easy parsing and defining of the layout, this allows me to specify a great deal of detail in a widely supported format which 
+can be read by other programming languages as well. Given the time constraints I have not implemented these ideas, but I list them here:
+Two example formats have been provided. \texttt{kbd.xml} implements the classic QWERTY layout and \texttt{split.xml} implements
+a split keyboard layout. While writing your own keyboard format do note some of the escape sequences you would have to use 
+for certain keys like \&,$<, >$ etc. Look at the example formats for further referance.
+\begin{itemize}
+	\item specify UI elements like size and color of the keys and heatmap.
+	\item specify the hand position
+	\item use faster languages to optimize the layout and generate the xml to test using python
+\end{itemize}
+
+\section{Root Element: \texttt{<kbd>}}
+The root element \texttt{<kbd>} represents the entire keyboard layout.
+
+\begin{itemize}
+    \item \textbf{Attributes:}
+    \begin{itemize}
+        \item \texttt{name}: The name of the keyboard (e.g., ``qwerty keyboard'').
+    \end{itemize}
+\end{itemize}
+
+\section{Row Element: \texttt{<row>}}
+The \texttt{<row>} element represents a single row of keys on the keyboard.
+NOTE: your layout must have a Row element with the attribute \texttt{'home'}.
+This row will be used for distance calculations.
+
+\begin{itemize}
+    \item \textbf{Attributes:}
+    \begin{itemize}
+        \item \texttt{id}: An identifier for the row (e.g., \texttt{'row1'}, \texttt{'row2'}).
+    \end{itemize}
+    \item \textbf{Child Elements:}
+    \begin{itemize}
+        \item Contains multiple \texttt{<key>} elements, each representing a key within the row.
+    \end{itemize}
+\end{itemize}
+
+\section{Key Element: \texttt{<key>}}
+The \texttt{<key>} element represents an individual key on the keyboard.
+
+\begin{itemize}
+    \item \textbf{Attributes:}
+    \begin{itemize}
+        \item \texttt{lower}: The character produced when the key is pressed without any modifier (e.g., lowercase letters, numbers).
+        \item \texttt{upper}: The character produced when the key is pressed with the Shift modifier (e.g., uppercase letters, special characters). This attribute may be omitted for keys without an upper case, such as \texttt{Backspace} or \texttt{Enter}.
+    \end{itemize}
+    \item \textbf{Child Element:}
+    \begin{itemize}
+        \item \texttt{<pos>}: Specifies the position of the key on the keyboard.
+        \begin{itemize}
+            \item \texttt{<x>}: The horizontal position of the key within the row.
+            \item \texttt{<y>}: The vertical position of the key (indicating the row number).
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\section{Special Keys}
+Some keys such as \texttt{Backspace}, \texttt{Enter}, \texttt{Space}, and modifier keys like \texttt{Shift} and \texttt{CapsLock} are represented without an \texttt{upper} attribute. These keys have specific functionality and do not produce character output.
+
+\section{Example Breakdown}
+\subsection{Row 1 (Numbers and Special Characters)}
+The first row contains the number keys and their corresponding special characters. Each key has both \texttt{lower} and \texttt{upper} values.
+
+\begin{lstlisting}[language=XML]
+<row id='row1'>
+    <key lower="1" upper="!">
+        <pos><x>1</x><y>0</y></pos>
+    </key>
+</row>
+\end{lstlisting}
+
+\subsection{Row 2 (QWERTY Letters)}
+The second row contains the QWERTY letter keys. Each key specifies both its lowercase and uppercase variants.
+
+\begin{lstlisting}[language=XML]
+<row id='row2'>
+    <key lower="q" upper="Q">
+        <pos><x>0.5</x><y>1</y></pos>
+    </key>
+</row>
+\end{lstlisting}
+
+\subsection{Special Keys}
+Special keys, such as \texttt{Backspace}, are defined with a \texttt{lower} attribute only.
+
+\begin{lstlisting}[language=XML]
+<key lower="Backspace">
+    <pos><x>13</x><y>0</y></pos>
+</key>
+\end{lstlisting}
+
+\subsection{Space Bar}
+The space bar is defined as a large key that spans the center of the keyboard layout.
+
+\begin{lstlisting}[language=XML]
+<row id='space'>
+    <key lower="Space">
+        <pos><x>3.5</x><y>4</y></pos>
+    </key>
+</row>
+\end{lstlisting}
+
+This XML structure allows easy customization of keyboard layouts by specifying key values and positions.
+
+\end{document}
+\end{document}

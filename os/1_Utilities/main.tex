@@ -1,0 +1,108 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{draftwatermark}
+\usepackage{parskip}
+\usepackage[a4paper, top=0.5in, bottom=0.7in, left=0.6in, right=0.6in, headheight=0.1in, footskip=0.5in]{geometry}
+\usepackage{minted}
+
+\title{CS3500 LAB 1}
+\author{Krutarth Patel EE23B137}
+\date{7 August 2025}
+
+\SetWatermarkText{OPERATING SYSTEMS}
+\SetWatermarkScale{2} 
+\SetWatermarkColor[gray]{0.9}
+
+\begin{document}
+\maketitle
+\section*{Brief}
+In this assignment we setup xv6-riscv, a toy operating system. The tasks involved were:
+\begin{enumerate}
+	\item Setup Docker
+	\item Write a program to print out `Hello ⟨ Your Roll No ⟩! Welcome to CS3500`
+	\item Compile the code as a user program and verify correctness
+\end{enumerate}
+
+\section*{Details}
+
+\subsection{Setup Docker}
+I was using Arch Linux so there was no official documentation on how to install docker on my system. However the latest package was available in the AUR repository and it worked just fine.
+
+\subsection{Write a program ...}
+\begin{minted}[linenos,frame=single]{nasm}
+.section .data
+# data section, the string to be printed
+# is defined here
+msg:    .asciz "Hello EE23B137! Welcome to CS3500"
+
+.section .text
+# code starts here
+.global main
+
+main:
+    # syscall: write(fd=1, buf=msg, count=14)
+    li a7, 16          # syscall number for write
+    li a0, 1           # file descriptor 1 (stdout)
+    la a1, msg         # address of the message
+    li a2, 33          # length of the message
+    ecall              # make the syscall
+
+    # syscall: exit(status=0)
+    li a7, 2          # syscall number for exit
+    li a0, 0           # exit code 0
+    ecall              # make the syscall
+\end{minted}
+
+\begin{itemize}
+	\item Figuring out the arguments required for the write() and exit() was tricky. I guessed that
+		it was the same as in Linux and it worked.
+	\item The syscall numbers were different for xv6. I found them in \texttt{kernel/syscall.h}
+\end{itemize}
+
+\pagebreak
+
+\subsection{Compile the code ...}
+Apply the following patch to \texttt{Makefile}
+
+\begin{minted}[linenos,frame=single]{dpatch}
+diff --git a/Makefile b/Makefile
+index fab7bc9..347e257 100644
+--- a/Makefile
++++ b/Makefile
+@@ -109,7 +109,10 @@ $U/usys.S : $U/usys.pl
+ 
+ $U/usys.o : $U/usys.S
+ 	$(CC) $(CFLAGS) -c -o $U/usys.o $U/usys.S
+-
++	
++$U/HelloWorld: $U/HelloWorld.S
++	$(CC) $(CFLAGS) -o $U/HelloWorld $U/HelloWorld.S
++	
+ $U/_forktest: $U/forktest.o $(ULIB)
+ 	# forktest has less library code linked in - needs to be small
+ 	# in order to be able to max out the proc table.
+@@ -142,6 +145,7 @@ UPROGS=\
+ 	$U/_grind\
+ 	$U/_wc\
+ 	$U/_zombie\
++	$U/_HelloWorld\
+ 
+ fs.img: mkfs/mkfs README $(UPROGS)
+ 	mkfs/mkfs fs.img README $(UPROGS)
+\end{minted}
+
+The whole \texttt{UPROGS} business was difficult to understand. I had to look how other user programs were being compiled and guess my way to this solution.
+
+\section*{Proof}
+
+\includegraphics[width=18cm, height=8cm]{proof}
+
+\section*{How to run}
+\begin{enumerate}
+	\item Place the HelloWorld.S file inside the \texttt{user/} directory
+	\item Apply the above patch to your \texttt{Makefile}
+	\item Compile and run using \texttt{\$ make qemu} inside the docker container
+\end{enumerate}
+
+\end{document}
+

@@ -1,0 +1,148 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\scriptsize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\title{Optimizing with Cython}
+\author{Krutarth Patel}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+This report presents a comparision of speed and accuracy between vanilla Python, Cython and numpy and C. And to that end I implement an integral evaluating function using all four.
+\section{Usage}
+I have included two shell scripts to display all the results shown in this report. This script would work on any UNIX device given you have gcc and the usual python python libraries installed( ex: matplotlib, numpy, cython ) 
+\begin{enumerate}
+	\item Use \texttt{run.sh} personal computer
+	\item Use \texttt{run\_jupy.sh} to get results on the jupyter server. Timings and answers for all tests are generated in \texttt{data.txt}. Please use this when running on the jupyter server since plotting is not possible.
+\end{enumerate}
+following section is for Windows users:
+please execute the following commands( they are written in the shell script as well ).
+
+\begin{verbatim}
+python3 setup.py build_ext --inplace
+python3 -c "import cy_mod" > data.txt
+python3 py_mod.py >> data.txt
+python3 plot.py
+\end{verbatim}
+
+You can optionally run the C program by compiling \texttt{trapz.c} using a compiler of choice. 
+for gcc, do:
+\begin{verbatim}
+gcc trapz.c -lm
+\end{verbatim}
+NOTE: please pipe the output of the program using \texttt{>>} to \texttt{data.txt} like so: 
+
+\begin{verbatim}
+a >> data.txt
+\end{verbatim}
+
+This is required since \texttt{plot.py} reads from this file to plot all the implementations. 
+
+\section{Implementation Details}
+
+\subsection{Cython}
+typing even some of the variables as ctypes improves the speed by 2x:
+\begin{lstlisting}[language=Python]
+
+def cy_trapz(f: Callable[[float], float], 
+			a: cython.double, 
+			b: cython.double, 
+			n: cython.int) -> cython.double:
+    delta  = (b-a)/n # Python Object and not ctypes
+    prev_y = f(a)
+    acc : cython.double= 0.0
+    x: cython.double = a + delta
+    for i in range(1,n+1):
+        curr_y: cython.double = f(x)
+        acc += ((curr_y + prev_y)/2)*delta
+        prev_y = curr_y
+        x += delta
+    return acc
+\end{lstlisting}
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=7cm]{Figure_1.png}
+    \caption{basic implmentation}
+\end{figure}
+
+But, we can do better. Explicitly specifying all the types, improves the speed
+by a significant amount:
+\begin{lstlisting}[language=Python]
+def cy_trapz(f: Callable[[float], float], 
+			a: cython.double, 
+			b: cython.double, 
+			n: cython.int) -> cython.double:
+    delta: cython.double = (b-a)/n
+    prev_y: cython.double = f(a)
+    acc : cython.double = 0.0
+    x: cython.double = a + delta
+    for i in range(1,n+1):
+        curr_y: cython.double = f(x)
+        acc += ((curr_y + prev_y)/2)*delta
+        prev_y = curr_y
+        x += delta
+    return acc
+\end{lstlisting}
+
+Finally, here are all the test results:
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=7cm]{Figure_1_but_better.png}
+\end{figure}
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=7cm]{Figure_3.png}
+\end{figure}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=7cm]{Figure_4.png}
+\end{figure}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=7cm]{Figure_5.png}
+\end{figure}
+
+\FloatBarrier
+\section{Observations}
+\begin{enumerate}
+	\item Python implementation is the slowest and least accurate. One reason could be poor memory management by the interpreter although that is not evident in this example since we are not using sequence types, but is a fact.
+	\item Cython implementation is almost as fast as numpy. But not quite, because of the bindings between python API and C which add some time. Notably, conversion of objects from Python Objects to c-types is one factor.
+	\item Numpy implementation is really fast. It beats C in one of the tests! I found the reason to be effecient memory management. Since \texttt{np.trapz()} takes an \texttt{np.array} as argument which is known to be order of magnitudes faster than python \texttt{list} due to more cache hits.
+	\item C implementation beats all of them except numpy in one test case, notably \texttt{sin()} implementation in numpy seems to be faster than its C counterpart in \texttt{math.h} .
+\end{enumerate}
+\end{document}

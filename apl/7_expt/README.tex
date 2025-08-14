@@ -1,0 +1,145 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\scriptsize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+
+\title{Imaging Using Microphone Arrays}
+\author{EE23B137 Krutarth Patel}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Objective}
+\textbf{NOTE}: Please go through the code file to get the answers to the questions posed in the assignment. This report is mainly for the purposes of showing the graphical output
+of the code. I have explained things in much more detail there \\
+\\
+The objective of this project is to simulate an acoustic imaging system using a microphone array and to reconstruct an image of a point obstacle using the Delay-And-Sum (DAS) algorithm. 
+
+\section{Usage}
+the code sequentially displays various plots pertaining to the questions asked. To step through them, close the window once you are done verifying the results
+shown this will cause a new window to open with the next plot. I have attached images of all the important plots in this report for your ready reference as well.
+\section{System Setup and Parameters}
+\subsection{Microphone Array Setup}
+\begin{itemize}
+    \item Number of microphones, $N_{\text{mics}}$: 64
+    \item Microphones are aligned along the y-axis with a spacing (pitch) of 0.1 units.
+    \item Source position: $(0, 0)$.
+\end{itemize}
+
+\subsection{Sound Wave Parameters}
+\begin{itemize}
+    \item Sampling rate proxy ($\text{dist\_per\_samp}$): 0.1 units.
+    \item Speed of sound, $C$: 2.0 units.
+    \item Obstacle position: $(3, -1)$.
+    \item Sinc Pulse Narrowness, $\text{SincP}$: 10.0, which controls the pulse frequency.
+\end{itemize}
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=8cm]{single_obst.png}
+    \caption{basic implmentation}
+\end{figure}
+
+
+\subsection{Effect of the \texttt{SincP} Parameter}
+The $\text{SincP}$ parameter determines the frequency and narrowness of the sinc pulse. Higher values of $\text{SincP}$ produce narrower, higher-frequency pulses. Thinner pulses provide sharper peaks, making it easier to distinguish between closely spaced objects, which is beneficial for image reconstruction.
+
+\section{Results and Observations}
+\subsection{Example Sinc Pulses}
+Increasing $\text{SincP}$ results in higher frequency pulses, creating narrower peaks. Narrower pulses allow for sharper image reconstruction, as they improve spatial resolution, making it easier to differentiate between closely spaced objects.
+
+\subsection{Maximum Intensity Position and Scaling}
+\begin{itemize}
+    \item \textbf{Observed Position:} The DAS reconstruction locates the obstacle at approximately $(30, 22)$ in the new coordinate system.
+    \item \textbf{Explanation:} This discrepancy arises due to scaling differences. Let $(X', Y')$ denote the DAS coordinate system and $(X, Y)$ the absolute coordinates.
+    \begin{equation}
+    X' = \frac{X}{\text{dist\_per\_samp}}, \quad Y' = \frac{N}{2} + \frac{Y}{\text{pitch}}
+    \end{equation}
+    The actual coordinates $(3, -1)$ align with approximately $(30, 22)$ in the scaled system used for reconstruction.
+\end{itemize}
+
+\subsection{Bounds on X and Y coordinates}
+
+I have prepared a quick graph display on desmos to show this graphically, 
+please refer to it \href{https://www.desmos.com/calculator/zar4naicoh}{\textbf{here}}.\\ 
+The maximum distance a mic can detect is $Nsamp * dist\_per\_samp$, which is 20. Therefore we plot
+ellipses with major axis length = 20. and get the maximum x-coordinate and y-coordinate from all the
+Nmics ellipses( the other focus is the source ).
+it is very easy to see, that the maximum y-coordinate is 11.6 and x-coordinate is 10. for the constants used 
+in the report. In general,
+   \begin{gather}
+	   maxy = \frac{Nsamp * dist\_per\_samp}{2} + \frac{Nmics * pitch}{4}\\
+	   maxx = \frac{Nsamp * dist\_per\_samp}{2}
+   \end{gather}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=8cm]{desmos-graph.png}
+\end{figure}
+
+\FloatBarrier
+
+\subsection{Effects of Changing Speed of Sound, $C$}
+Decreasing $C$ without adjusting the sampling rate reduces $\text{dist\_per\_samp}$, allowing the system to differentiate between closer objects. This creates a sharper image, as the system can more accurately distinguish real objects from false positives.
+
+\subsection{Impact of Varying Number of Microphones and Samples}
+The following combinations of $N_{\text{mics}}$ and $N_{\text{samp}}$ were tested to understand their impact on the reconstructed image:
+\begin{itemize}
+    \item $N_{\text{mics}} = \{8, 32, 64\}$ and $N_{\text{samp}} = \{50, 100, 200\}$
+    \item \textbf{Observations:} Increasing $N_{\text{mics}}$ provides more data points, leading to a clearer image. Higher $N_{\text{samp}}$ improves resolution along the x-axis, yielding a more detailed image.
+\end{itemize}
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=10cm]{plot_grid.png}
+\end{figure}
+
+\FloatBarrier
+
+\section{Reconstruction from File Data}
+To verify the DAS algorithm's robustness, files \texttt{rx2.txt} and \texttt{rx3.txt} were used. Each file contains pre-recorded data for all microphones, which were processed and displayed using the same DAS-based reconstruction approach.
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=6cm]{rx2.png}
+	\caption{rx2}
+\end{figure}
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=6cm]{rx3.png}
+	\caption{rx3}
+\end{figure}
+
+\end{document}

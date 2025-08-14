@@ -1,0 +1,294 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{draftwatermark}
+\usepackage{parskip}
+\usepackage[a4paper, top=0.5in, bottom=0.7in, left=0.6in, right=0.6in, headheight=0.1in, footskip=0.5in]{geometry}
+\usepackage{minted}
+
+\title{CS3500 LAB 2}
+\author{Krutarth Patel EE23B137}
+\date{14 August 2025}
+
+\SetWatermarkText{OPERATING SYSTEMS}
+\SetWatermarkScale{2} 
+\SetWatermarkColor[gray]{0.9}
+
+\begin{document}
+\maketitle
+\section*{Brief}
+In this assignment we added two functionalities to the xv6-riscv kernel.
+\begin{enumerate}
+	\item A trace utility like \texttt{strace} in Linux
+	\item A backtrace utility which prints the call stack
+\end{enumerate}
+
+\section*{Details}
+
+\subsection{Trace}
+\subsubsection*{Objective}
+When tracing is enabled for a process and a traced system call is called, this utility will print out the system call name and the status returned by the syscall after execution in the following format: \newline
+
+\begin{center}
+\texttt{<pid>:
+syscall <name> -> <return value>}
+\end{center}
+
+Care is taken to copy the mask to the child process for each new process created through \texttt{fork()}.
+
+\subsubsection*{Code}
+\texttt{Makefile}:
+A user program is added that can be run on the command line.
+\newline
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/Makefile b/Makefile
+index fab7bc9..d0d1f0a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -142,6 +142,9 @@ UPROGS=\
+ 	$U/_grind\
+ 	$U/_wc\
+ 	$U/_zombie\
++	$U/_trace\
+\end{minted}
+
+\texttt{user/trace.c}: This code is executed first upon running trace.
+\begin{minted}[linenos, frame=single]{c}
+#include "kernel/types.h"
+#include "user/user.h"
+
+int main(int argc, char * argv[])
+{
+  if(argc < 3){
+    fprintf(2, "Usage: trace <mask> <exec> <args>\n");
+    exit(1);
+  }
+  uint32 mask = atoi(argv[1]);
+  int ret = trace(mask);
+  if(ret < 0){
+    fprintf(2, "trace: failed! error code: %d\n", ret);
+    exit(1);
+  }
+  ret = exec(argv[2], &argv[2]);
+  if(ret < 0){
+    fprintf(2, "%s failed!\n", argv[2]);
+    exit(1);
+  }
+  exit(0);
+}
+\end{minted}
+First, it sets the mask provided by the user as command line argument by calling \texttt{trace(mask)}. Then the command to be traced is called using \texttt{exec(path, argv)}.
+
+\texttt{user/user.h}: Function declaration.
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/user/user.h b/user/user.h
+index f16fe27..bd3b7f0 100644
+--- a/user/user.h
++++ b/user/user.h
+@@ -22,6 +22,7 @@ int getpid(void);
+ char* sbrk(int);
+ int sleep(int);
+ int uptime(void);
++int trace(int);
+ 
+ // ulib.c
+ int stat(const char*, struct stat*);
+\end{minted}
+
+\texttt{user/usys.pl}: To autogenerate stub for calling the underlying syscall.
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/user/usys.pl b/user/usys.pl
+index 01e426e..9c97b05 100755
+--- a/user/usys.pl
++++ b/user/usys.pl
+@@ -36,3 +36,4 @@ entry("getpid");
+ entry("sbrk");
+ entry("sleep");
+ entry("uptime");
++entry("trace");
+\end{minted}
+
+\texttt{user/usys.S}: The generated assembly stub.
+\begin{minted}[linenos, frame=single]{nasm}
+trace:
+ li a7, SYS_trace
+ ecall
+ ret
+\end{minted}
+
+\texttt{kernel/syscall.h}: Assigning the new trace syscall a number.
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/kernel/syscall.h b/kernel/syscall.h
+index bc5f356..cc112b9 100644
+--- a/kernel/syscall.h
++++ b/kernel/syscall.h
+@@ -20,3 +20,4 @@
+ #define SYS_link   19
+ #define SYS_mkdir  20
+ #define SYS_close  21
++#define SYS_trace  22
+\end{minted}
+
+\texttt{kernel/proc.h}: Adding member variable \texttt{trace\_mask} to \texttt{struct proc}.
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+diff --git a/kernel/proc.h b/kernel/proc.h
+index d021857..ff50307 100644
+--- a/kernel/proc.h
++++ b/kernel/proc.h
+@@ -104,4 +104,5 @@ struct proc {
+   struct file *ofile[NOFILE];  // Open files
+   struct inode *cwd;           // Current directory
+   char name[16];               // Process name (debugging)
++  uint32 trace_mask;
+ };
+\end{minted}
+
+\texttt{kernel/proc.c}: Initializing the mask to 0 for a new process( in \texttt{allocproc()} )and copying the mask to every child process( in \texttt{fork()} ).
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/kernel/proc.c b/kernel/proc.c
+index d280acf..89be5d2 100644
+--- a/kernel/proc.c
++++ b/kernel/proc.c
+@@ -146,6 +146,8 @@ found:
+   p->context.ra = (uint64)forkret;
+   p->context.sp = p->kstack + PGSIZE;
+ 
++  // Set trace mask to 0
++  p->trace_mask = 0;
+   return p;
+ }
+ 
+@@ -320,6 +322,7 @@ fork(void)
+ 
+   acquire(&np->lock);
+   np->state = RUNNABLE;
++  np->trace_mask = p->trace_mask;
+   release(&np->lock);
+ 
+   return pid;
+\end{minted}
+
+\texttt{kernel/sysproc.c}: Implementing \texttt{sys\_trace()}.
+\begin{minted}[linenos, frame=single]{c}
+uint64
+sys_trace(void)
+{
+  int mask;
+  argint(0, &mask);
+  struct proc * p = myproc();
+  acquire(&p->lock);
+  p->trace_mask = (uint32)mask;
+  release(&p->lock);
+  return 0;
+}
+\end{minted}
+NOTE: you need to get a mutex lock before updating the \texttt{trace\_mask} member variable of \texttt{struct proc}. Since there can be race conditions where the current process is forked while \texttt{sys\_trace()} is being executed.
+
+\texttt{kernel/syscall.c}: Printing debug info for traced syscalls.
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index ed65409..22f1f9a 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -101,6 +101,35 @@ extern uint64 sys_unlink(void);
+ extern uint64 sys_link(void);
+ extern uint64 sys_mkdir(void);
+ extern uint64 sys_close(void);
++extern uint64 sys_trace(void);
++
++// An array mapping syscall numbers from syscall.h
++// to their names for trace() 
++static char * syscall_names[] = {
++[SYS_fork]   = "fork",
++[SYS_exit]   = "exit",
++[SYS_wait]   = "wait",
++[SYS_pipe]   = "pipe",
++[SYS_read]   = "read",
++[SYS_kill]   = "kill",
++[SYS_exec]   = "exec",
++[SYS_fstat]  = "fstat",
++[SYS_chdir]  = "chdir",
++[SYS_dup]    = "dup",
++[SYS_getpid] = "getpid",
++[SYS_sbrk]   = "sbrk",
++[SYS_sleep]  = "sleep",
++[SYS_uptime] = "uptime",
++[SYS_open]   = "open",
++[SYS_write]  = "write",
++[SYS_mknod]  = "mknod",
++[SYS_unlink] = "unlink",
++[SYS_link]   = "link",
++[SYS_mkdir]  = "mkdir",
++[SYS_close]  = "close",
++[SYS_trace]  = "trace",
++};
++
+ 
+ // An array mapping syscall numbers from syscall.h
+ // to the function that handles the system call.
+@@ -126,6 +155,7 @@ static uint64 (*syscalls[])(void) = {
+ [SYS_link]    sys_link,
+ [SYS_mkdir]   sys_mkdir,
+ [SYS_close]   sys_close,
++[SYS_trace]   sys_trace,
+ };
+ 
+ void
+@@ -139,6 +169,9 @@ syscall(void)
+     // Use num to lookup the system call function for num, call it,
+     // and store its return value in p->trapframe->a0
+     p->trapframe->a0 = syscalls[num]();
++    if((p->trace_mask & (1<<num))){
++      printf("%d: syscall %s  -> %lu\n", p->pid, syscall_names[num], p->trapframe->a0);
++    }
+   } else {
+     printf("%d %s: unknown sys call %d\n",
+             p->pid, p->name, num);
+\end{minted}
+
+\subsubsection*{Proof}
+\includegraphics[width=22cm, height=5cm]{trace}
+\newpage
+\includegraphics[width=8cm, height=25cm]{trace2}
+
+\subsection{Backtrace}
+\subsubsection*{Objective}
+Calling \texttt{backtrace()} should print out the entire function call stack for the process up until that point in execution.
+
+\subsubsection*{Code}
+\texttt{kernel/defs.h}: Function declaration
+\begin{minted}[linenos, frame=single]{dpatch}
+diff --git a/kernel/defs.h b/kernel/defs.h
+index d1b6bb9..29f5a76 100644
+--- a/kernel/defs.h
++++ b/kernel/defs.h
+@@ -80,6 +80,7 @@ int             pipewrite(struct pipe*, uint64, int);
+ int            printf(char*, ...) __attribute__ ((format (printf, 1, 2)));
+ void            panic(char*) __attribute__((noreturn));
+ void            printfinit(void);
++void            backtrace(void);
+ 
+ // proc.c
+ int             cpuid(void);
+\end{minted}
+
+\texttt{kernel/printf.c}: Implementing \texttt{backtrace()}.
+\begin{minted}[linenos, frame=single]{c}
+void
+backtrace(void)
+{
+  uint64 fp = r_fp();
+  uint64 top = PGROUNDUP(fp);
+  printf("backtrace:\n");
+  while(fp < top){
+    printf("%lx\n", *((uint64 *)(fp-8))); // The return address is at fp-8
+    fp = *(uint64 *)(fp - 16);	// The frame pointer to prev frame is at fp-16
+  }
+}
+\end{minted}
+
+\subsubsection*{Proof}
+\includegraphics[width=22cm, height=6cm]{backtrace-test}
+\includegraphics[width=22cm, height=4cm]{backtrace2}
+\end{document}
+
