@@ -4,3 +4,6 @@
 [submodule "paradigms-of-programming/cs3100_m25"]
 	path = paradigms-of-programming/cs3100_m25
 	url = https://github.com/kayceesrk/cs3100_m25.git
+[submodule "apl/4_expt"]
+	path = apl/4_expt
+	url = https://github.com:kuku929/onehotkeyboard.git
