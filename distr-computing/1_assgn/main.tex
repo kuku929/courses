@@ -1,0 +1,220 @@
+\input{preamble}
+\input{format}
+\input{commands}
+\usepackage{amssymb}
+\usepackage{algpseudocode}
+
+\begin{document}
+
+\begin{Large}
+    \textsf{\textbf{CS6851: Distributed Algorithms}}
+    
+    Assignment 1
+\end{Large}
+
+\vspace{1ex}
+
+\textsf{\textbf{Student:}} \text{Krutarth Patel}, \href{ee23b137@smail.iitm.ac.in}{ee23b137@smail.iitm.ac.in}\\
+
+\begin{problem}{}{problem-label}
+\begin{enumerate}[(a)]
+    \item Let’s revisit the lower bound for 2-coloring paths. We showed a lower bound for a graph with
+$4t+ 2$ vertices, by combining two paths of length $2t+ 1$ with an edge. Can we reduce the number
+of vertices in the lower bound graph by combining two paths of length $t$ each? How does this
+affect our lower bound?
+    \item Now, let us consider a fixed path on $t- 2$ vertices, and we add a vertex $l$ to the left end and a
+vertex $r$ to the right end to make it a path on t vertices. Note that all IDs are fixed except the
+IDs of $l$ and $r$. Can you show that a $t- 2$ round LOCAL algorithm will fail to 2-color such a path?
+\end{enumerate}
+\end{problem}
+
+\begin{solution*}{Solution (a)}{}
+Consider three paths: $P^{(1)}, P^{(2)}, P^{(3)}$ each of length $t$. Let $P^{(n)}_{i}$ denote the color of $i^{th}$ node along the $n^{th}$ path( in any arbitrary but fixed direction )
+We will consider two cases:
+	\begin{enumerate}[label=(\roman*)]
+		\item $t = 2k + 1 $ \newline
+			Let $A$ be an algorithm that can color a path in $k$ rounds. \\
+			Using pigeon hole principle, we can always find two paths $P^{(i)}$ and $P^{(j)}$ such that 
+			$P^{(i)}_{k+1} = P^{(j)}_{k+1}$. \\
+			Construct a path $P^{(4)}$ by joining $P^{(i)}_t$ and $P^{(j)}_t$. \\
+			$P^{(4)}_{k+1} = P^{(4)}_{t+k+1}  = P^{(i)}_{k+1} = P^{(j)}_{k+1}$ because $A$ is a $k$ round LOCAL algorithm. \\
+			This is a contradiction since in a valid 2-coloring of $P^{(4)}$, $P^{(4)}_{k+1} \neq P^{(4)}_{t+k+1}$. \\
+		\( \therefore \) The lower bound is $k+1$ to color a path of length $t$ when $t=2k+1$.
+		\item $t = 2k$ \newline
+			Let $A$ be an algorithm that can color a path in $k-1$ rounds. \\
+			Using pigeon hole principle, we can always find two paths $P^{(i)}$ and $P^{(j)}$ such that 
+			$P^{(i)}_{k+1} = P^{(j)}_{k+1}$. \\
+			Construct a path $P^{(4)}$ by joining $P^{(i)}_t$ and $P^{(j)}_t$\\
+			$P^{(4)}_{k+1} = P^{(4)}_{t+k+1}  = P^{(i)}_{k+1} = P^{(j)}_{k+1}$ because $A$ is a $k-1$ round LOCAL algorithm. \\
+			This is a contradiction since in a valid 2-coloring of $P^{(4)}$, $P^{(4)}_{k+1} \neq P^{(4)}_{t+k+1}$. \\
+		\( \therefore \) The lower bound is $k$ to color a path of length $t$ when $t=2k$. \\
+		\newline
+		In general, the lower bound to color a path of length $2t$ is $\frac{t+1}{2}$.
+\end{enumerate}
+\end{solution*}
+
+\begin{problem}{}{problem-label-t}
+\end{problem}
+
+\begin{problem}{}{problem-label-3}
+Let $T$ be a tree with $n$ nodes. The Rake and Compress
+algorithm is used to heirarchically decompose $T$ into a set of paths and singleton vertices. This
+is done iteratively where each iteration $i$ consists of a rake step (removing leaves) and a compress
+step (removing degree-two paths) performed on all nodes of the tree. We continue until there
+are no vertices left in the tree.
+\begin{enumerate}[(a)]
+	\item Describe how the rake and compress operations in each iteration can be implemented in
+	the LOCAL model in constant rounds.
+	\item Let $V_i$ be the set of nodes removed in iteration $i$, and let $T_i = V (T)\setminus (V_1\cup ...\cup V_{i-1})$ be the
+	set of nodes that are not removed until the beginning of iteration i (note that $T_1 = V (T)$).
+	Show that $|V_i| \geq |T_i|/2$.
+	\item Prove that the total number of rounds/iterations required to reduce the tree to an empty graph is $O(log n)$.
+	\item Using the output of the rake-and-compress decomposition, show that there is a deterministic algorithm in the LOCAL model to compute a 3-coloring of an unoriented tree in $O(log n)$ rounds.
+\end{enumerate}
+\end{problem}
+
+\begin{solution*}{Solution (a)}{}
+	\begin{algorithmic}
+	\Function{delete}{u}
+		\For {$v \in N(u)$}
+		\State \textbf{send} delete link to $v$
+		\EndFor
+	\EndFunction
+	\newline
+	\Function{update}{u}
+	\For {$v \in N(u)$}
+		\If{\textbf{received} delete link from v}
+			\State $N(u) \gets N(u)\setminus v$
+			\State $deg(u) \gets deg(u) -1$
+		\EndIf
+	\EndFor
+	\EndFunction
+	\newline
+	\State $ i \gets i^{th}$ iteration
+	\State $ u \gets$ node u
+	\State $ N(u) \gets$ set of adjacent nodes
+	\State $ deg(u) \gets |N(u)|$
+
+	\Comment rake step
+	\If{$deg(u) = 1$}
+		\State \Call{delete}{u}
+	\EndIf
+
+	\Comment compress step
+	\If{$deg(u) = 2$}
+		\State \Call{delete}{u}
+	\EndIf
+	\State \Call{update}{u}
+	\end{algorithmic}
+\end{solution*}
+
+\begin{solution*}{Solution (b)}{}
+	Assume the contrary.
+	\[\implies |V_i| < \frac{|T_i|}{2}. \]
+	Since, $T_i$ is a forest,
+	\[\implies \sum_{u \in T_i}^{} deg(u) = 2(|T_i| - 1)\]
+	Also,
+	\[\implies \sum_{u \in T_i}^{} deg(u) \geq |V_i| + 3(|T_i| - |V_i|) \geq 2|T_i|\]
+	Which is a contradiction.
+	\[ \therefore |V_i| \geq \frac{|T_i|}{2}\]
+\end{solution*}
+
+\begin{solution*}{Solution (c)}{}
+	Using the previous result,
+	\[ |T_i| - |V_i| = |T_{i+1}| < \frac{|T_i|}{2} \]
+	By recursing on $i$ we get,
+	\[ |T_{i+1}| < \frac{|T_1|}{2^{i}}\]
+	The algorithm ends when $|T_{n+1}| = 0$.
+	\[ \implies 2^n > |T_1|\]
+	\[ \therefore n = \lceil \log |T_1| \rceil \] 
+	The round complexity is $O(logn)$
+\end{solution*}
+
+\begin{solution*}{Solution (d)}{}
+	\begin{algorithmic}
+	\State $ i \gets 1$
+	\Comment iteration
+	\State $ N(u) \gets$ set of nodes adjacent to $u$
+	\State $ deg(u) \gets |N(u)|$
+	\State $ deleted \gets false$
+	\Comment whether deleted at $i^{th}$ iteration
+	\State $ r \gets 0$
+	\Comment round number
+	\State $ S \gets \emptyset$
+	\Comment adjacent nodes deleted after $u$
+	\State $ E \gets \emptyset$
+	\Comment adjacent nodes deleted in the same round as $u$
+	\State $ color \gets ID(u) $
+	\newline
+	\While{$deg(u) \neq 0 \land deleted = false$}
+		\Comment rake step
+		\If{$deg(u) = 1$}
+			\State \Call{delete}{}
+		\EndIf
+
+		\Comment compress step
+		\If{$deg(u) = 2$}
+			\State \Call{delete}{}
+		\EndIf
+		\State \Call{update}{}
+	\EndWhile
+	\newline
+	\For{$i \in \{1...log(n)+1\}$}
+		\If{$ r = i$}
+			\State \Call{ColeVishkin}{}
+		\EndIf
+	\EndFor
+	\newline
+	\Function{delete}{}
+		\State $deleted \gets true$
+		\State $r \gets i$
+		\For {$v \in N(u)$}
+		\State \textbf{send} delete link to $v$
+		\EndFor
+	\EndFunction
+	\newline
+	\Function{update}{}
+	\For {$v \in N(u)$}
+		\If{\textbf{received} delete link from $v$}
+			\State $deg(u) \gets deg(u) -1$
+			\If{$r < i$}
+				\State $S \gets S \cup v$
+			\Else
+				\State $E \gets E \cup v$
+			\EndIf
+		\EndIf
+	\EndFor
+	\EndFunction
+	\newline
+	\Function{ColeVishkin}{}
+	\For{$ v \in S $}
+		\State orient edge from $u$ to $v$
+	\EndFor
+	\For{$ v \in E $}
+		\If{$u > v$}
+			\State orient edge from $u$ to $v$
+		\Else
+			\State orient edge from $v$ to $u$
+		\EndIf
+	\EndFor \\
+	Apply the Cole Vishkin algorithm on the oriented graph
+	\EndFunction
+	\newline
+	\end{algorithmic}
+A few things to note:
+\begin{enumerate}
+	\item $|S| + |E| \leq 2$. Can be deduced from the algorithm.
+	\item Let $E_i = \{(u,v): u \in V_i, v \in V (T)\setminus (V_1\cup ...\cup V_{i-1}), (u,v) \in E(T_i)\}$ The induced subgraph $T[E_i]$ is: 
+		\begin{enumerate}
+			\item A forest. Since $T$ is a tree.
+			\item $deg(v, T[E_i]) \leq 2 \forall v \in V(T[E_i])$. Since $|S| + |E| \leq 2$.
+			\item Each connected component is thus either a singleton or a path. Cole Vishkin can be used after orienting each edge in $E_i$ according to the algorithm give above.
+		\end{enumerate}
+\end{enumerate}
+\end{solution*}
+
+
+\bibliographystyle{apalike}
+\bibliography{references}
+
+\end{document}

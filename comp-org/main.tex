@@ -193,6 +193,18 @@ Swap2(int x, int y){
 		POP y
 	}
 }
+
+Swap3(int *pX, int *pY){
+	__asm{
+		; this thing is not gae
+		MOV EAX, pX
+		MOV EBX, pY
+		PUSH DWORD PTR [EAX]
+		PUSH DWORD PTR [EBX]
+		POP DWORD PTR [EAX]
+		POP DWORD PTR [EBX]
+	}
+}
 \end{minted}
 
 
@@ -263,5 +275,84 @@ the stack will look like:
 up memory access.
 \end{minipage}
 }
+
+\subsection*{Recursion}
+\begin{minted}[linenos, frame=single]{c}
+int fact(int n)
+{
+	int ans = 1;
+	if(0 != n){
+		ans = n*fact(n-1);
+	}
+	return ans;
+}
+
+int main()
+{
+	int ans = 0;
+	ans = fact(3);
+}
+\end{minted}
+This gives the assembly output as:
+\begin{minted}[linenos, frame=single]{nasm}
+	; Prologue
+	PUSH EBP
+	MOV EBP, ESP
+	PUSH ECX
+
+	MOV EAX, 1
+	MOV EBX, [EBP+8]
+	MOV [EBP-4], EAX
+	CMP EBX, 0
+	JZ DONE
+	DEC EBX
+	PUSH EBX
+	CALL fact
+	ADD ESP, 4
+	MUL [EBP+8]
+
+DONE:
+	; Epilogue
+	ADD ESP, 4
+	POP EBP
+	RET 0
+\end{minted}
+\pagebreak
+The stack will look like(NOTE it grows downwards): 
+
+\begin{center}
+\begin{tabular}{|c|}
+	\hline
+	ans-main \\
+	\hline
+	3 \\
+	\hline
+	ret-addr-main \\
+	\hline
+	EBP-main \\
+	\hline
+	ans-fact1 \\
+	\hline
+	2 \\
+	\hline
+	ret-addr1(0xC200) \\
+	\hline
+	EBP-fact1 \\
+	\hline
+	ans-fact2 \\
+	\hline
+	1 \\
+	\hline
+	ret-addr2(0xC200) \\
+	\hline
+	EBP-fact2 \\
+	\hline
+	ans-fact3 \\
+	\hline
+	0 \\
+	\hline
+	ret-addr3(0xC200) \\
+\end{tabular}
+\end{center}
 \end{document}
 
